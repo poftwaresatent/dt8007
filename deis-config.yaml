@@ -1,0 +1,54 @@
+- Plugin:
+    name: deis
+    search: deis-plugin
+
+- World:
+    lines:
+      - [ -5, -5,  5, -5 ]
+      - [  5, -5,  5,  5 ]
+      - [  5,  5, -5,  5 ]
+      - [ -5,  5, -5, -5 ]
+
+- Object:
+    name: pie_base
+    parent: world
+    mount: [ 0.0, -2.5, 0.2 ]
+    lines:
+      - [ -0.2, -0.4,  0.4, -0.2 ]
+      - [ -0.2,  0.4,  0.4,  0.2 ]
+      - [  0.4, -0.2,  0.4,  0.2 ]
+      - [ -0.2,  0.4, -0.2, -0.4 ]
+- DifferentialDrive:
+    name: pie_drive
+    parent: pie_base
+    wheel_radius: 0.2
+    wheel_base: 0.3
+- RayDistanceSensor:
+    name: charlie_left
+    parent: pie_base
+    mount: [ 0.1, 0.1, 0.35 ]
+    max_distance: 2.5
+- RayDistanceSensor:
+    name: charlie_right
+    parent: pie_base
+    mount: [ 0.1, -0.1, -0.35 ]
+    max_distance: 2.5
+
+- DEISProcess:
+    name: deis
+    
+- Simulator:
+    timestep: 0.1
+    state: pause
+
+- ObjectCamera:
+    name: world_camera
+    object: world
+- ObjectDrawing:
+    name: world_drawing
+    object: world
+- View:
+    name: world_view
+    camera: world_camera
+    drawings:
+      - world_drawing
