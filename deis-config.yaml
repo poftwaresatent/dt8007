@@ -24,19 +24,21 @@
     wheel_radius: 0.2
     wheel_base: 0.3
 - RayDistanceSensor:
-    name: charlie_left
+    name: left_sensor
     parent: pie_base
     mount: [ 0.1, 0.1, 0.35 ]
     max_distance: 2.5
 - RayDistanceSensor:
-    name: charlie_right
+    name: right_sensor
     parent: pie_base
     mount: [ 0.1, -0.1, -0.35 ]
     max_distance: 2.5
 
 - DEISProcess:
-    name: deis
-    
+    left_sensor: left_sensor
+    right_sensor: right_sensor
+    drive: pie_drive
+
 - Simulator:
     timestep: 0.1
     state: pause

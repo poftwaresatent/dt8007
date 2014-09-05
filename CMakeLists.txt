@@ -37,6 +37,24 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   endif (CXX_FLAG_O0)
 endif (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 
+include (CheckCCompilerFlag)
+
+check_c_compiler_flag (-pipe C_FLAG_pipe)
+if (C_FLAG_pipe)
+  add_definitions (-pipe)
+endif (C_FLAG_pipe)
+check_c_compiler_flag (-Wall C_FLAG_Wall)
+if (C_FLAG_Wall)
+  add_definitions (-Wall)
+endif (C_FLAG_Wall)
+
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  check_c_compiler_flag (-O0 C_FLAG_O0)
+  if (C_FLAG_O0)
+    add_definitions (-O0)
+  endif (C_FLAG_O0)
+endif (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+
 subdirs (sfl2)
 
 include_directories (
@@ -45,5 +63,5 @@ include_directories (
   sfl2/3rdparty/fpplib/yaml-cpp-0.2.7/include
   )
 
-add_library (deis-plugin MODULE deis-plugin.cpp)
+add_library (deis-plugin MODULE deis-plugin.cpp student-code.c)
 target_link_libraries (deis-plugin npm2)
