@@ -8,7 +8,7 @@
 - Object:
     name: a_base
     parent: world
-    mount: [ -4.0, -4.0, -1.5 ]
+    mount: [ -3.0, -3.0,  -0.5 ]
     lines:
       - [ -0.2, -0.4,  0.4, -0.2 ]
       - [ -0.2,  0.4,  0.4,  0.2 ]
@@ -20,9 +20,9 @@
 - KinematicControl:
     name: a_ctrl
     drive: a_drive
-    goal: [ 2.5, 4.0, -1.5, 0.1, 0.1 ]
-    vtrans_max: 0.3
-    vrot_max: 0.3
+    goal: [ 0.0, 0.0, 0.0, 0.1, 0.1 ]
+    vtrans_max: 1.0
+    vrot_max: 1.0
 
 - Plugin:
     name: splinefollow
@@ -30,10 +30,12 @@
 - SplineFollowProcess:
     name: foo
     control: a_ctrl
-    start: [-4.0, -4.0, -1.5, 0.1, 0.1 ]
-    end: [ 2.5, 4.0, -1.5, 0.1, 0.1 ]
+    start: [ -3.0, -3.0, -0.5 ]
+    end:   [  2.0,  2.0, -1.0 ]
     duration: 15.0
-    d_orient: 1.0
+    d_orient: 2.0
+    dr: 0.1
+    dth: 0.01
 - SplineFollowDrawing:
     name: bar
     process: foo
