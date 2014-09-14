@@ -50,13 +50,7 @@ public:
   double dth_;
   double d_orient_;
   
-  struct Point {
-    Point (): x (0.0), y (0.0) {}
-    Point (double _x, double _y): x (_x), y (_y) {}
-    double x, y;
-  };
-  
-  Point points_[6];
+  double px_[6], py_[6];
 };
 
 
@@ -117,68 +111,78 @@ init (ostream & erros)
   carrot_.Set (start_.X(), start_.Y(), start_.Theta(), dr_, dth_);
   control_->setGoal (carrot_);
   
-  points_[0].x = start_.X() - d_orient_ * cos (start_.Theta());
-  points_[0].y = start_.Y() - d_orient_ * sin (start_.Theta());
-  points_[1].x = start_.X();
-  points_[1].y = start_.Y();
-  points_[2].x = start_.X() + d_orient_ * cos (start_.Theta());
-  points_[2].y = start_.Y() + d_orient_ * sin (start_.Theta());
-  points_[3].x = end_.X() - d_orient_ * cos (end_.Theta());
-  points_[3].y = end_.Y() - d_orient_ * sin (end_.Theta());
-  points_[4].x = end_.X();
-  points_[4].y = end_.Y();
-  points_[5].x = end_.X() + d_orient_ * cos (end_.Theta());
-  points_[5].y = end_.Y() + d_orient_ * sin (end_.Theta());
+  px_[0] = start_.X() - d_orient_ * cos (start_.Theta());
+  py_[0] = start_.Y() - d_orient_ * sin (start_.Theta());
+  px_[1] = start_.X();
+  py_[1] = start_.Y();
+  px_[2] = start_.X() + d_orient_ * cos (start_.Theta());
+  py_[2] = start_.Y() + d_orient_ * sin (start_.Theta());
+  px_[3] = end_.X() - d_orient_ * cos (end_.Theta());
+  py_[3] = end_.Y() - d_orient_ * sin (end_.Theta());
+  px_[4] = end_.X();
+  py_[4] = end_.Y();
+  px_[5] = end_.X() + d_orient_ * cos (end_.Theta());
+  py_[5] = end_.Y() + d_orient_ * sin (end_.Theta());
   
   return RUNNING;
 }
 
 
-static void calc_p (double pax, double pay,
-		    double pbx, double pby,
-		    double pcx, double pcy,
-		    double pdx, double pdy,
+static void base (double tt, double * bb)
+{
+  bb[0] = (  -pow(tt,3) + 3*pow(tt,2) - 3*tt + 1) / 6.0;
+  bb[1] = ( 3*pow(tt,3) - 6*pow(tt,2)        + 4) / 6.0;
+  bb[2] = (-3*pow(tt,3) + 3*pow(tt,2) + 3*tt + 1) / 6.0;
+  bb[3] = (   pow(tt,3)                         ) / 6.0;
+}
+
+
+static void calc_p (double * px, double * py,
 		    double tau,
 		    double & qx, double & qy)
 {
-  double const bm1  ((  -tau*tau*tau + 3*tau*tau -  3*tau + 1) / 6);
-  double const b0   (( 3*tau*tau*tau - 6*tau*tau          + 4) / 6);
-  double const b1   ((-3*tau*tau*tau + 3*tau*tau +  3*tau + 1) / 6);
-  double const b2   (    tau*tau*tau/6);
-  
-  qx = pax*bm1 + pbx*b0 + pcx*b1 * pdx*b2;
-  qy = pay*bm1 + pby*b0 + pcy*b1 * pdy*b2;
+  double bb[4];
+  base (tau, bb);
+  qx = 0.0;
+  qy = 0.0;
+  for (size_t ii (0); ii < 4; ++ii) {
+    qx += px[ii] * bb[ii];
+    qy += py[ii] * bb[ii];
+  }
 }
 
 
-static void calc_dp (double pax, double pay,
-		     double pbx, double pby,
-		     double pcx, double pcy,
-		     double pdx, double pdy,
+static void dbase (double tt, double * db)
+{
+  db[0] = (-3*pow(tt,2) +  6*tt - 3) / 6.0;
+  db[1] = ( 9*pow(tt,2) - 12*tt    ) / 6.0;
+  db[2] = (-9*pow(tt,2) +  6*tt + 3) / 6.0;
+  db[3] = ( 3*pow(tt,2)            ) / 6.0;
+}
+
+
+static void calc_dp (double * px, double * py,
 		     double tau,
 		     double & dqx, double & dqy)
 {
-  double const bm1d ((-3*tau*tau +  6*tau - 3) / 6);
-  double const b0d  (( 9*tau*tau - 12*tau    ) / 6);
-  double const b1d  ((-9*tau*tau +  6*tau + 3) / 6);
-  double const b2d  (    tau*tau/2);
-  
-  dqx = pax*bm1d + pbx*b0d + pcx*b1d * pdx*b2d;
-  dqy = pay*bm1d + pby*b0d + pcy*b1d * pdy*b2d;
+  double db[4];
+  dbase (tau, db);
+  dqx = 0.0;
+  dqy = 0.0;
+  for (size_t ii (0); ii < 4; ++ii) {
+    dqx += px[ii] * db[ii];
+    dqy += py[ii] * db[ii];
+  }
 }
 
 
-static void calc_carrot (double pax, double pay,
-			 double pbx, double pby,
-			 double pcx, double pcy,
-			 double pdx, double pdy,
+static void calc_carrot (double * px, double * py,
 			 double tau,
 			 Goal & carrot)
 {
   double qx, qy, dqx, dqy;
-  calc_p (pax, pay, pbx, pby, pcx, pcy, pdx, pdy, tau, qx, qy);
-  calc_dp (pax, pay, pbx, pby, pcx, pcy, pdx, pdy, tau, dqx, dqy);
-  
+  calc_p  (px, py, tau, qx, qy);
+  calc_dp (px, py, tau, dqx, dqy);
   carrot.Set (qx, qy, atan2 (dqy, dqx), carrot.Dr(), carrot.Dtheta());
 }
 
@@ -211,12 +215,7 @@ run (double timestep, ostream & erros)
     offset = 2;
   }
   
-  calc_carrot (points_[offset + 0].x, points_[offset + 0].y,
-	       points_[offset + 1].x, points_[offset + 1].y,
-	       points_[offset + 2].x, points_[offset + 2].y,
-	       points_[offset + 3].x, points_[offset + 3].y,
-	       tau,
-	       carrot_);
+  calc_carrot (px_ + offset, py_ + offset, tau, carrot_);
   control_->setGoal (carrot_);
   
   return RUNNING;
@@ -272,25 +271,49 @@ draw ()
   glColor3d (0.5, 0.25, 0.25);
   glLineWidth (1);
   glBegin (GL_LINE_STRIP);
-  for (int offset (0); offset < 3; ++offset) {
-    for (double tau (0.0); tau < 1.0; tau += 0.1) {
-      double qx, qy;
-      calc_p (process_->points_[offset + 0].x, process_->points_[offset + 0].y,
-	      process_->points_[offset + 1].x, process_->points_[offset + 1].y,
-	      process_->points_[offset + 2].x, process_->points_[offset + 2].y,
-	      process_->points_[offset + 3].x, process_->points_[offset + 3].y,
-	      tau,
-	      qx, qy);
-      glVertex2d (qx, qy);
-    }
+  int offset (0);
+  for (int ii (0); ii <= 10; ++ii) {
+    double qx, qy;
+    calc_p (process_->px_ + offset, process_->py_ + offset, 0.1 * ii, qx, qy);
+    glVertex2d (qx, qy);
   }
   glEnd();
-
-  glColor3d (1, 0.5, 0.5);
+  
+  glColor3d (0.25, 0.5, 0.25);
+  glLineWidth (1);
+  glBegin (GL_LINE_STRIP);
+  offset = 1;
+  for (int ii (0); ii <= 10; ++ii) {
+    double qx, qy;
+    calc_p (process_->px_ + offset, process_->py_ + offset, 0.1 * ii, qx, qy);
+    glVertex2d (qx, qy);
+  }
+  glEnd();
+  
+  glColor3d (0.25, 0.25, 0.5);
+  glLineWidth (1);
+  glBegin (GL_LINE_STRIP);
+  offset = 2;
+  for (int ii (0); ii <= 10; ++ii) {
+    double qx, qy;
+    calc_p (process_->px_ + offset, process_->py_ + offset, 0.1 * ii, qx, qy);
+    glVertex2d (qx, qy);
+  }
+  glEnd();
+  
+  glColor3d (1.0, 0.5, 0.5);
   glPointSize (4);
   glBegin (GL_POINTS);
-  for (int ii (0); ii < 6; ++ii) {
-    glVertex2d (process_->points_[ii].x, process_->points_[ii].y);
+  for (int ii (0); ii < 3; ++ii) {
+    glVertex2d (process_->px_[ii], process_->py_[ii]);
+  }
+  glEnd();
+  
+  glColor3d (0.5, 1.0, 0.5);
+  glPointSize (4);
+  glBegin (GL_POINTS);
+  for (int ii (3); ii < 6; ++ii) {
+    glVertex2d (process_->px_[ii], process_->py_[ii]);
   }
   glEnd();
   
