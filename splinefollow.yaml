@@ -34,6 +34,9 @@
     end: [ 2.5, 4.0, -1.5, 0.1, 0.1 ]
     duration: 15.0
     d_orient: 1.0
+- SplineFollowDrawing:
+    name: bar
+    process: foo
 
 - Simulator:
     timestep: 0.01
@@ -50,3 +53,4 @@
     camera: world_camera
     drawings:
       - world_drawing
+      - bar

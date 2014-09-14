@@ -18,9 +18,13 @@
 
 #include <npm2/Plugin.hpp>
 #include <npm2/Simulator.hpp>
+#include <npm2/Drawing.hpp>
+#include <npm2/gl.hpp>
 #include <npm2/Factory.hpp>
 #include <npm2/Process.hpp>
 #include <npm2/KinematicControl.hpp>
+#include <sfl/api/Goal.hpp>
+
 #include <cmath>
 
 using namespace npm2;
@@ -37,10 +41,13 @@ public:
   virtual state_t run (double timestep, ostream & erros);
   
   KinematicControl * control_;
-  Goal start_;
-  Goal end_;
+  Frame start_;
+  Frame end_;
+  Goal carrot_;
   double duration_;
   double tstart_;
+  double dr_;
+  double dth_;
   double d_orient_;
   
   struct Point {
@@ -53,9 +60,23 @@ public:
 };
 
 
+class SplineFollowDrawing
+  : public Drawing
+{
+public:
+  explicit SplineFollowDrawing (const string & name);
+  
+  virtual void draw ();
+  
+  SplineFollowProcess * process_;
+  double wheelbase_;
+};
+
+
 int npm2_plugin_init ()
 {
   Factory::instance().declare <SplineFollowProcess> ("SplineFollowProcess");
+  Factory::instance().declare <SplineFollowDrawing> ("SplineFollowDrawing");
   return 0;
 }
 
@@ -64,15 +85,20 @@ SplineFollowProcess::
 SplineFollowProcess (string const & name)
   : Process (name),
     control_ (0),
-    start_ (0.0, 0.0, 0.0, 0.1, 0.1),
-    end_ (1.0, 1.0, 0.0, 0.1, 0.1),
+    start_ (0.0, 0.0, 0.0),
+    end_ (1.0, 1.0, 0.0),
+    carrot_ (0.0, 0.0, 0.0, 0.1, 0.1),
     duration_ (2.0),
+    dr_ (0.1),
+    dth_ (0.1),
     d_orient_ (0.5)
 {
   reflectSlot ("control", &control_);
   reflectParameter ("start", &start_);
   reflectParameter ("end", &end_);
   reflectParameter ("duration", &duration_);
+  reflectParameter ("dr", &dr_);
+  reflectParameter ("dth", &dth_);
   reflectParameter ("d_orient", &d_orient_);
 }
 
@@ -88,7 +114,8 @@ init (ostream & erros)
   tstart_ = Simulator::clock();
   
   control_->enable (true);
-  control_->setGoal (start_);
+  carrot_.Set (start_.X(), start_.Y(), start_.Theta(), dr_, dth_);
+  control_->setGoal (carrot_);
   
   points_[0].x = start_.X() - d_orient_ * cos (start_.Theta());
   points_[0].y = start_.Y() - d_orient_ * sin (start_.Theta());
@@ -107,74 +134,168 @@ init (ostream & erros)
 }
 
 
-static void foobar (double pax, double pay,
+static void calc_p (double pax, double pay,
 		    double pbx, double pby,
 		    double pcx, double pcy,
 		    double pdx, double pdy,
 		    double tau,
-		    double & gx, double & gy, double & gth)
+		    double & qx, double & qy)
 {
   double const bm1  ((  -tau*tau*tau + 3*tau*tau -  3*tau + 1) / 6);
-  double const bm1d ((                -3*tau*tau +  6*tau - 3) / 6);
-  
   double const b0   (( 3*tau*tau*tau - 6*tau*tau          + 4) / 6);
-  double const b0d  ((                 9*tau*tau - 12*tau    ) / 6);
-  
   double const b1   ((-3*tau*tau*tau + 3*tau*tau +  3*tau + 1) / 6);
-  double const b1d  ((                -9*tau*tau +  6*tau + 3) / 6);
-  
   double const b2   (    tau*tau*tau/6);
-  double const b2d  (        tau*tau/2);
   
-  gx = pax*bm1 + pbx*b0 + pcx*b1 * pdx*b2;
-  gy = pay*bm1 + pby*b0 + pcy*b1 * pdy*b2;
-  gth = atan2 (pay*bm1d + pby*b0d + pcy*b1d * pdy*b2d,
-	       pax*bm1d + pbx*b0d + pcx*b1d * pdx*b2d);
+  qx = pax*bm1 + pbx*b0 + pcx*b1 * pdx*b2;
+  qy = pay*bm1 + pby*b0 + pcy*b1 * pdy*b2;
 }
 
-	       
+
+static void calc_dp (double pax, double pay,
+		     double pbx, double pby,
+		     double pcx, double pcy,
+		     double pdx, double pdy,
+		     double tau,
+		     double & dqx, double & dqy)
+{
+  double const bm1d ((-3*tau*tau +  6*tau - 3) / 6);
+  double const b0d  (( 9*tau*tau - 12*tau    ) / 6);
+  double const b1d  ((-9*tau*tau +  6*tau + 3) / 6);
+  double const b2d  (    tau*tau/2);
+  
+  dqx = pax*bm1d + pbx*b0d + pcx*b1d * pdx*b2d;
+  dqy = pay*bm1d + pby*b0d + pcy*b1d * pdy*b2d;
+}
+
+
+static void calc_carrot (double pax, double pay,
+			 double pbx, double pby,
+			 double pcx, double pcy,
+			 double pdx, double pdy,
+			 double tau,
+			 Goal & carrot)
+{
+  double qx, qy, dqx, dqy;
+  calc_p (pax, pay, pbx, pby, pcx, pcy, pdx, pdy, tau, qx, qy);
+  calc_dp (pax, pay, pbx, pby, pcx, pcy, pdx, pdy, tau, dqx, dqy);
+  
+  carrot.Set (qx, qy, atan2 (dqy, dqx), carrot.Dr(), carrot.Dtheta());
+}
+
+
 SplineFollowProcess::state_t SplineFollowProcess::
 run (double timestep, ostream & erros)
 {
   double const lambda (3.0 * (Simulator::clock() - tstart_) / duration_);
-  cout << "lambda " << lambda << "\n";
+  double tau;
+  int offset;
   
   if (lambda <= 0.0) {
-    control_->setGoal (start_);
+    tau = 0;
+    offset = 0;
   }
   else if (lambda <= 1.0) {
-    double gx, gy, gth;
-    foobar (points_[0].x, points_[0].y,
-	    points_[1].x, points_[1].y,
-	    points_[2].x, points_[2].y,
-	    points_[3].x, points_[3].y,
-	    lambda,
-	    gx, gy, gth);
-    control_->setGoal (Goal (gx, gy, gth, end_.Dr(), end_.Dtheta()));
+    tau = lambda;
+    offset = 0;
   }
   else if (lambda <= 2.0) {
-    double gx, gy, gth;
-    foobar (points_[1].x, points_[1].y,
-	    points_[2].x, points_[2].y,
-	    points_[3].x, points_[3].y,
-	    points_[4].x, points_[4].y,
-	    lambda - 1.0,
-	    gx, gy, gth);
-    control_->setGoal (Goal (gx, gy, gth, end_.Dr(), end_.Dtheta()));
+    tau = lambda - 1.0;
+    offset = 1;
   }
   else if (lambda <= 3.0) {
-    double gx, gy, gth;
-    foobar (points_[2].x, points_[2].y,
-	    points_[3].x, points_[3].y,
-	    points_[4].x, points_[4].y,
-	    points_[5].x, points_[5].y,
-	    lambda - 2.0,
-	    gx, gy, gth);
-    control_->setGoal (Goal (gx, gy, gth, end_.Dr(), end_.Dtheta()));
+    tau = lambda - 2.0;
+    offset = 2;
   }
   else {
-    control_->setGoal (end_);
+    tau = 1.0;
+    offset = 2;
   }
   
+  calc_carrot (points_[offset + 0].x, points_[offset + 0].y,
+	       points_[offset + 1].x, points_[offset + 1].y,
+	       points_[offset + 2].x, points_[offset + 2].y,
+	       points_[offset + 3].x, points_[offset + 3].y,
+	       tau,
+	       carrot_);
+  control_->setGoal (carrot_);
+  
   return RUNNING;
+}
+
+
+SplineFollowDrawing::
+SplineFollowDrawing (const string & name)
+  : Drawing (name, "curve and control point of a SplineFollowProcess"),
+    process_ (0),
+    wheelbase_ (0.2)
+{
+  reflectSlot ("process", &process_);
+  reflectParameter ("wheelbase", &wheelbase_);
+}
+
+
+static void drawPose (double px, double py, double pth,
+		      double width)
+{
+  glBegin (GL_LINES);
+  
+  double xx (width / 2);
+  double yy (0);
+  Frame const pose (px, py, pth);
+  pose.To (xx, yy);
+  glVertex2d (pose.X(), pose.Y());
+  glVertex2d (xx, yy);
+  
+  xx = 0;
+  yy = width / 2;
+  pose.To (xx, yy);
+  glVertex2d (pose.X(), pose.Y());
+  glVertex2d (xx, yy);
+  
+  xx = 0;
+  yy = - width / 2;
+  pose.To (xx, yy);
+  glVertex2d (pose.X(), pose.Y());
+  glVertex2d (xx, yy);
+  
+  glEnd();
+}
+
+
+void SplineFollowDrawing::
+draw ()
+{
+  if ( ! process_) {
+    return;
+  }
+  
+  glColor3d (0.5, 0.25, 0.25);
+  glLineWidth (1);
+  glBegin (GL_LINE_STRIP);
+  for (int offset (0); offset < 3; ++offset) {
+    for (double tau (0.0); tau < 1.0; tau += 0.1) {
+      double qx, qy;
+      calc_p (process_->points_[offset + 0].x, process_->points_[offset + 0].y,
+	      process_->points_[offset + 1].x, process_->points_[offset + 1].y,
+	      process_->points_[offset + 2].x, process_->points_[offset + 2].y,
+	      process_->points_[offset + 3].x, process_->points_[offset + 3].y,
+	      tau,
+	      qx, qy);
+      glVertex2d (qx, qy);
+    }
+  }
+  glEnd();
+
+  glColor3d (1, 0.5, 0.5);
+  glPointSize (4);
+  glBegin (GL_POINTS);
+  for (int ii (0); ii < 6; ++ii) {
+    glVertex2d (process_->points_[ii].x, process_->points_[ii].y);
+  }
+  glEnd();
+  
+  glColor3d (1, 0.5, 0.5);
+  glLineWidth (1);
+  glPointSize (1);
+  drawPose (process_->carrot_.X(), process_->carrot_.Y(), process_->carrot_.Theta(), wheelbase_);
 }
