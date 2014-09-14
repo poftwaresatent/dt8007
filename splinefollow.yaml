@@ -1,0 +1,52 @@
+- World:
+    lines:
+      - [ -5, -7,  5, -7 ]
+      - [  5, -7,  5,  7 ]
+      - [  5,  7, -5,  7 ]
+      - [ -5,  7, -5, -7 ]
+
+- Object:
+    name: a_base
+    parent: world
+    mount: [ -4.0, -4.0, -1.5 ]
+    lines:
+      - [ -0.2, -0.4,  0.4, -0.2 ]
+      - [ -0.2,  0.4,  0.4,  0.2 ]
+      - [  0.4, -0.2,  0.4,  0.2 ]
+      - [ -0.2,  0.4, -0.2, -0.4 ]
+- GenericDrive:
+    name: a_drive
+    parent: a_base
+- KinematicControl:
+    name: a_ctrl
+    drive: a_drive
+    goal: [ 2.5, 4.0, -1.5, 0.1, 0.1 ]
+    vtrans_max: 0.3
+    vrot_max: 0.3
+
+- Plugin:
+    name: splinefollow
+    search: splinefollow-plugin
+- SplineFollowProcess:
+    name: foo
+    control: a_ctrl
+    start: [-4.0, -4.0, -1.5, 0.1, 0.1 ]
+    end: [ 2.5, 4.0, -1.5, 0.1, 0.1 ]
+    duration: 15.0
+    d_orient: 1.0
+
+- Simulator:
+    timestep: 0.01
+    state: pause
+
+- ObjectCamera:
+    name: world_camera
+    object: world
+- ObjectDrawing:
+    name: world_drawing
+    object: world
+- View:
+    name: world_view
+    camera: world_camera
+    drawings:
+      - world_drawing

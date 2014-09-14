@@ -65,3 +65,6 @@ include_directories (
 
 add_library (deis-plugin MODULE deis-plugin.cpp student-code.c)
 target_link_libraries (deis-plugin npm2)
+
+add_library (splinefollow-plugin MODULE splinefollow-plugin.cpp)
+target_link_libraries (splinefollow-plugin npm2)
