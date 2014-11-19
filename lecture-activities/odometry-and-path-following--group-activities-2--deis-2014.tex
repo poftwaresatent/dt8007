@@ -1,0 +1,86 @@
+\documentclass[a4paper]{article}
+
+\usepackage{booktabs,amsmath}
+\usepackage[margin=30mm]{geometry}
+
+
+\begin{document}
+\title{
+  \large
+  DT8007 Design of Embedded Intelligent Systems\\
+  \Large
+  Group Activities Odometry and Path Following (Part II)}
+\author{Roland Philippsen}
+\maketitle
+
+\noindent
+Form groups of 3-4 students and work together on the following tasks.
+
+\section*{Pose Feedback Control}
+
+\begin{enumerate}
+
+\item
+  Compute the polar errors for the following situations.
+  
+  \begin{center}
+    \begin{tabular}{lll}
+      \toprule
+      case & pose           & goal                                      \\
+           & $(x,y,\theta)$ & $(x_\text{g},y_\text{g},\theta_\text{g})$ \\
+      \midrule
+      a & $( 0,  0, 0)            $ & $( 1,  1,  \frac{ \pi}{2})$ \\
+      b & $( 1,  1, 0)            $ & $( 0,  0, -\frac{3\pi}{4})$ \\
+      c & $(-1, -1, \frac{\pi}{4})$ & $( 1,  1,  \frac{-\pi}{4})$ \\
+      d & $(-1, -1, \frac{\pi}{4})$ & $(-1, -1, -\frac{ \pi}{2})$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  
+\item
+  For each of the cases above, what would be the desired speed $(v,\omega)$ for the following set of gains?
+  \[
+  k_\rho = 3,\; k_\delta = -1.5,\; k_\gamma = 8
+  \]
+  
+\item
+  Design a method for ensuring that the desired velocities $(v,\omega)$ never exceed given maxima, i.e.\ $|v|\leq v_\text{max}$ and $|\omega|\leq \omega_\text{max}$.
+  Think about cases where either $v$ or $\omega$ violates their upper bound individually, as well as the case where both violate their bounds at the same time.
+  What are the aspects that you have to take into account?
+  Sketch an algorithm that adds such bound handling to the pose feedback controller.
+  
+\end{enumerate}
+
+\section*{Spline Paths}
+
+\begin{enumerate}
+  
+\item
+  Given the following 6 control points, make a sketch of what the resulting uniform cubic B-spline $q(\lambda)$ looks like.
+  Then, compute $q(\lambda)$ for $\lambda\in\{0, 1.5, 2.5\}$.
+  
+  \begin{center}
+    \begin{tabular}{lllllll}
+      \toprule
+      case & $Q_0$ & $Q_1$ & $Q_2$ & $Q_3$ & $Q_4$ & $Q_5$ \\
+      \midrule
+      a & $( 0, 0)$ & $(1,  0)$ & $(2, 0)$ & $(3, -1)$ & $(3, 0)$ & $(3, 1)$ \\
+      b & $(-1, 0)$ & $(0, -6)$ & $(1, 0)$ & $(2,  6)$ & $(3, 5)$ & $(4, 4)$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  
+\item
+  Develop the formula for computing the tangent to a uniform cubic B-spline.
+  Graphically determine the tangent to the curves you sketched for the previous exercise.
+  Then compute the tangent for the same values of $\lambda$ and verify your computations using your sketch.
+
+\item
+  What is the angle between the tangent to the curve and the X-axis?
+
+\item
+  Develop the formula which determines how fast $\lambda$ has to change in order to make the point $q(\lambda)$ move with a desired velocity along the spline.
+  
+\end{enumerate}
+
+\end{document}

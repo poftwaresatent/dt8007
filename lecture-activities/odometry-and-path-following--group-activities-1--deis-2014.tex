@@ -1,0 +1,83 @@
+\documentclass[a4paper]{article}
+
+\usepackage{booktabs,amsmath}
+\usepackage[margin=30mm]{geometry}
+
+
+\begin{document}
+\title{
+  \large
+  DT8007 Design of Embedded Intelligent Systems\\
+  \Large
+  Group Activities Odometry and Path Following (Part I)}
+\author{Roland Philippsen}
+\maketitle
+
+\noindent
+Form groups of 3-4 students and work together on the following tasks.
+
+\section*{Trapezoidal Trajectories}
+
+\begin{enumerate}
+
+\item
+  Make a sketch and compute the timings for trapezoidal velocity profiles in the following cases.
+  
+  \begin{center}
+    \begin{tabular}{llllll}
+      \toprule
+      case & initial & initial & target & maximum & maximum \\
+      & position & velocity & position & velocity & acceleration \\
+      \midrule
+      a & $p_0=0$ & $v_0=0$  & $p_1=1.5$ & $v_m=1$   & $a_m=3$ \\
+      b & $p_0=2$ & $v_0=0$  & $p_1=-1$  & $v_m=0.5$ & $a_m=2$ \\
+      c & $p_0=0$ & $v_0=10$ & $p_1=1$   & $v_m=15$  & $a_m=5$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  
+\item
+  Write down the set of equations and an algorithm that allows you to solve this kind of problem in general.
+
+\end{enumerate}
+
+\section*{Differential Drive Kinematics}
+
+\begin{enumerate}
+
+\item
+  Consider a differential drive robot with parameters $R_\text{l}=22mm$, $R_\text{r}=21mm$, $B=180mm$, $N_\text{m}=12$, $N_\text{w}=75$, and $N_\text{e}=16$.
+  The initial robot pose is $(0.5, -0.7, 0.1)$ and the initial encoder values are $(654, 809)$.
+  Compute the odometry updates for the following sequence of encoder values:
+  
+  \begin{center}
+    \begin{tabular}{llll}
+      \toprule
+      $e_\text{l}$ & 677 & 698 & 710 \\
+      \midrule
+      $e_\text{r}$ & 814 & 805 & 789 \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  
+\item
+  Compute the left and right wheel velocities $\dot{\alpha}_\text{l}$ and $\dot{\alpha}_\text{r}$ that correspond to the following workspace motions.
+  The wheel radii are $R_\text{l}=R_\text{r}=25mm$ and the wheel base is $B=200mm$.
+  \begin{itemize}
+  \item
+    straight-line forward motion with $v=0.4m/s$
+  \item
+    pure rotation with $\omega=-45\deg/s$
+  \item
+    forward left curve with radius $S=0.6m$ and translational speed $v=0.3m/s$
+  \end{itemize}
+  
+\item
+  To calibrate the odometry of a differential drive robot, you have driven it forward in a straight line for a distance of $3.65m$ and measured $3423$ encoder ticks on the left and $3453$ encoder ticks on the right.
+  Then you made the robot rotate on the spot for 5 full revolutions in a counter-clockwise direction, and measured $-550$ encoder ticks on the left and $564$ encoder ticks on the right.
+  What are the odometry parameters, assuming that you do not know $N_\text{e}$, $N_\text{m}$, and $N_\text{w}$?
+  
+\end{enumerate}
+
+
+\end{document}
