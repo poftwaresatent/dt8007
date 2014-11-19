@@ -34,6 +34,8 @@ int pie_tick (void)
     return -1;
   }
   
+  printf ("%f  %f\n", sensors.left_distance, sensors.right_distance);
+  
   struct piesim_command_s command;
   command.left_speed = 0.1;
   command.right_speed = 0.2;

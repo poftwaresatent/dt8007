@@ -268,7 +268,7 @@ draw ()
     return;
   }
   
-  glColor3d (0.5, 0.25, 0.25);
+  glColor3d (1.0, 0.8, 0.8);
   glLineWidth (1);
   glBegin (GL_LINE_STRIP);
   int offset (0);
@@ -279,7 +279,7 @@ draw ()
   }
   glEnd();
   
-  glColor3d (0.25, 0.5, 0.25);
+  glColor3d (0.8, 1.0, 0.8);
   glLineWidth (1);
   glBegin (GL_LINE_STRIP);
   offset = 1;
@@ -290,7 +290,7 @@ draw ()
   }
   glEnd();
   
-  glColor3d (0.25, 0.25, 0.5);
+  glColor3d (0.8, 0.8, 1.0);
   glLineWidth (1);
   glBegin (GL_LINE_STRIP);
   offset = 2;
@@ -317,7 +317,7 @@ draw ()
   }
   glEnd();
   
-  glColor3d (1, 0.5, 0.5);
+  glColor3d (1, 0.5, .5);
   glLineWidth (1);
   glPointSize (1);
   drawPose (process_->carrot_.X(), process_->carrot_.Y(), process_->carrot_.Theta(), wheelbase_);
